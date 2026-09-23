@@ -30,6 +30,11 @@ class ContextManager(private val onStateUpdated: (ContextState) -> Unit) {
     // (ver evaluateConcentration): un valor mas ajustado no tolera el ruido normal del
     // acelerometro y el temporizador nunca llega a acumular los 30s en un dispositivo real.
     private val stillnessAccelThreshold = 0.5f
+    // Promedio movil exponencial de rawAccel (alpha bajo = suaviza mucho el ruido).
+    // Sin esto, un solo pico aislado de una muestra (vibracion de la mesa, ruido del
+    // sensor) reinicia stillStartTime y en la practica nunca se completan 30s seguidos
+    // sin ningun pico, aunque el telefono este realmente quieto.
+    private var smoothedAccel: Float = 0f
     private var _isDeviceInactive: Boolean = false
     val isDeviceInactive: Boolean get() = _isDeviceInactive
 
@@ -90,13 +95,15 @@ class ContextManager(private val onStateUpdated: (ContextState) -> Unit) {
 
     /**
      * Detecta con confirmación temporal si el dispositivo está completamente inmóvil
-     * (magnitud de aceleración dinámica por debajo de [stillnessAccelThreshold]).
+     * (magnitud de aceleración dinámica, suavizada, por debajo de [stillnessAccelThreshold]).
      * Requiere quietud sostenida durante [inactivityConfirmationDelayMs] ms (30 s) para
-     * confirmar abandono; cualquier movimiento reinicia el conteo de inmediato.
+     * confirmar abandono; un movimiento sostenido reinicia el conteo (un pico aislado de
+     * una sola muestra no, gracias al suavizado de [smoothedAccel]).
      */
     private fun updateInactivityState(accel: Float) {
+        smoothedAccel = smoothedAccel * 0.8f + accel * 0.2f
         val currentTime = SystemClock.elapsedRealtime()
-        val isStill = accel < stillnessAccelThreshold
+        val isStill = smoothedAccel < stillnessAccelThreshold
         if (isStill) {
             if (stillStartTime == 0L) {
                 stillStartTime = currentTime
