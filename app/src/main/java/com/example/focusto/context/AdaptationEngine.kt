@@ -6,7 +6,8 @@ enum class ConcentrationMode {
     COOL_DOWN_LOCK, // Agitación (Castigo)
     BAD_POSTURE,
     TOO_CLOSE,
-    FACE_ABSENT // Celular boca arriba quieto (Pausa)
+    FACE_ABSENT, // Celular boca arriba quieto (Pausa)
+    INACTIVE // Dispositivo completamente inmóvil > 30s (Abandono de la sesión)
 }
 
 class AdaptationEngine {
@@ -22,17 +23,24 @@ class AdaptationEngine {
             return ConcentrationMode.DEEP_FOCUS
         }
 
-        // 3. Ausencia (Boca arriba sobre mesa - Ángulo < 15 grados y sin movimiento)
+        // 3. Abandono de la sesión (Inmovilidad total sostenida > 30s).
+        // Se evalúa después de DEEP_FOCUS para no confundir el gesto deliberado de
+        // "boca abajo" (premio, ya cubierto arriba) con el abandono del estudio.
+        if (manager.isDeviceInactive) {
+            return ConcentrationMode.INACTIVE
+        }
+
+        // 4. Ausencia (Boca arriba sobre mesa - Ángulo < 15 grados y sin movimiento)
         if (state.rawInclination < 15.0f && state.rawAccel < 0.5f) {
             return ConcentrationMode.FACE_ABSENT
         }
 
-        // 4. Salud Visual (Distancia - Sensor de proximidad)
+        // 5. Salud Visual (Distancia - Sensor de proximidad)
         if (manager.isTooClose(state.rawProximity)) {
             return ConcentrationMode.TOO_CLOSE
         }
 
-        // 5. Ergonomía (Postura - Menos de 45 grados mirando hacia abajo)
+        // 6. Ergonomía (Postura - Menos de 45 grados mirando hacia abajo)
         if (manager.hasBadPosture(state.rawInclination)) {
             return ConcentrationMode.BAD_POSTURE
         }

@@ -317,6 +317,15 @@ class MainActivity : AppCompatActivity() {
                         // Resetear para que pueda notificar de nuevo si baja y sube
                         viewModel.setPhysicalStudyModeNotified(false)
                     }
+                } else if (vmState.isPaused && vmState.pausedByInactivity && !contextManager.isDeviceInactive) {
+                    // --- Recuperación automática desde INACTIVO ---
+                    // El pomodoro está pausado porque el dispositivo estuvo inmóvil >30s.
+                    // Al volver a detectar movimiento, salimos solos de INACTIVO y
+                    // retomamos la sesión: el próximo tick de evaluateConcentration()
+                    // recalculará el modo que corresponda al contexto actual.
+                    viewModel.setPausedByInactivity(false)
+                    viewModel.hideLockOverlay()
+                    resumePomodoro()
                 } else {
                     hideHealthAlert()
                     viewModel.setPhysicalStudyModeNotified(false)
@@ -383,6 +392,13 @@ class MainActivity : AppCompatActivity() {
             ConcentrationMode.FACE_ABSENT -> {
                 pausePomodoro()
                 showLockOverlay(getString(R.string.alert_face_absent))
+            }
+            ConcentrationMode.INACTIVE -> {
+                // Adaptación observable: se pausa el conteo del Pomodoro (no se acredita
+                // como tiempo de enfoque) y se muestra un overlay distinto al de FACE_ABSENT
+                // para que quede claro que la sesión se retomará sola al detectar movimiento.
+                viewModel.setPausedByInactivity(true)
+                showLockOverlay(getString(R.string.alert_inactive))
             }
             ConcentrationMode.TOO_CLOSE -> {
                 showHealthAlert(getString(R.string.alert_too_close))

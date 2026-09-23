@@ -34,6 +34,7 @@
     <string name="alert_bad_posture">¡ENDEREZA TU ESPALDA!\nMantén una postura saludable para tu cuello.</string>
     <string name="alert_too_close">¡MUY CERCA!\nAleja el teléfono para proteger tu vista.</string>
     <string name="alert_face_absent">PAUSA AUTOMÁTICA\nRetoma la lectura para continuar el tiempo.</string>
+    <string name="alert_inactive">MODO INACTIVO\nDejaste el teléfono quieto por más de 30s. Tu Pomodoro está en pausa y se reanudará solo al detectar movimiento.</string>
 
     <!-- Ajustes -->
     <string name="btn_settings">⚙</string>

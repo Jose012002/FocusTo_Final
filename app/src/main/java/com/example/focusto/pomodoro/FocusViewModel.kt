@@ -32,7 +32,10 @@ data class FocusUiState(
     val currentLuxValue: Int = 0,
     val healthAlert: HealthAlert? = null,
     val lockMessage: String? = null,
-    val physicalStudyModeNotified: Boolean = false
+    val physicalStudyModeNotified: Boolean = false,
+    /** true cuando la pausa actual la disparó el modo INACTIVO (no el usuario), para
+     *  poder reanudar la sesión automáticamente al detectar movimiento de nuevo. */
+    val pausedByInactivity: Boolean = false
 )
 
 /**
@@ -65,6 +68,7 @@ class FocusViewModel : ViewModel() {
             isPomodoroRunning = true,
             isPaused = false,
             physicalStudyModeNotified = false,
+            pausedByInactivity = false,
             startButtonText = "PAUSAR",
             currentSessionDuration = duration
         )
@@ -78,6 +82,7 @@ class FocusViewModel : ViewModel() {
         _uiState.value = currentState.copy(
             isPomodoroRunning = true,
             isPaused = false,
+            pausedByInactivity = false,
             startButtonText = "PAUSAR"
         )
     }
@@ -91,6 +96,7 @@ class FocusViewModel : ViewModel() {
             isPomodoroRunning = false,
             isPaused = false,
             isBreakTime = false,
+            pausedByInactivity = false,
             startButtonText = "INICIAR",
             timerText = formatMillis(currentState.studyDurationMs),
             currentSessionDuration = currentState.studyDurationMs
@@ -175,6 +181,10 @@ class FocusViewModel : ViewModel() {
 
     fun setPhysicalStudyModeNotified(notified: Boolean) {
         _uiState.value = currentState.copy(physicalStudyModeNotified = notified)
+    }
+
+    fun setPausedByInactivity(paused: Boolean) {
+        _uiState.value = currentState.copy(pausedByInactivity = paused)
     }
 
     fun showHealthAlert(message: String, isPositive: Boolean = false) {

@@ -231,6 +231,38 @@ class FocusViewModelTest {
     }
 
     @Test
+    fun `setPausedByInactivity marca y limpia el flag de pausa por INACTIVO`() {
+        assertFalse(viewModel.currentState.pausedByInactivity)
+        viewModel.setPausedByInactivity(true)
+        assertTrue(viewModel.currentState.pausedByInactivity)
+        viewModel.setPausedByInactivity(false)
+        assertFalse(viewModel.currentState.pausedByInactivity)
+    }
+
+    @Test
+    fun `onPomodoroResumed limpia pausedByInactivity al recuperar el modo tras INACTIVO`() {
+        viewModel.onPomodoroStarted()
+        viewModel.onPomodoroPaused()
+        viewModel.setPausedByInactivity(true) // simula que MainActivity detecto INACTIVE
+
+        viewModel.onPomodoroResumed() // simula que se detecto movimiento de nuevo
+
+        assertFalse(viewModel.currentState.pausedByInactivity)
+        assertTrue(viewModel.currentState.isPomodoroRunning)
+    }
+
+    @Test
+    fun `onPomodoroStarted y onPomodoroReset tambien limpian pausedByInactivity`() {
+        viewModel.setPausedByInactivity(true)
+        viewModel.onPomodoroReset()
+        assertFalse(viewModel.currentState.pausedByInactivity)
+
+        viewModel.setPausedByInactivity(true)
+        viewModel.onPomodoroStarted()
+        assertFalse(viewModel.currentState.pausedByInactivity)
+    }
+
+    @Test
     fun `onDurationsChanged aplica la nueva duracion cuando no hay sesion corriendo`() {
         viewModel.onDurationsChanged(studyDurationMs = 50 * 60 * 1000L, breakDurationMs = 10 * 60 * 1000L)
 

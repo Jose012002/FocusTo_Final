@@ -21,6 +21,15 @@ class ContextManager(private val onStateUpdated: (ContextState) -> Unit) {
     private var _isPhysicalStudyModeActive: Boolean = false
     val isPhysicalStudyModeActive: Boolean get() = _isPhysicalStudyModeActive
 
+    // Estado confirmado de Inactividad (dispositivo inmóvil, abandono de la sesión).
+    // Requiere quietud sostenida por inactivityConfirmationDelayMs; se cancela de
+    // inmediato en cuanto se detecta movimiento (sin retardo de salida).
+    private var stillStartTime: Long = 0
+    private val inactivityConfirmationDelayMs = 30_000L
+    private val stillnessAccelThreshold = 0.15f
+    private var _isDeviceInactive: Boolean = false
+    val isDeviceInactive: Boolean get() = _isDeviceInactive
+
     // Umbrales calibrados. Arrancan con los valores por defecto de FocusConfig y se
     // actualizan vía updateThresholds() en cuanto se carga (o cambia) la configuración
     // persistida — por eso son 'var' y no 'val'.
@@ -52,8 +61,9 @@ class ContextManager(private val onStateUpdated: (ContextState) -> Unit) {
             rawProximity = proximity,
             rawInclination = inclination
         )
-        // Actualizar el estado del Modo Físico antes de notificar
+        // Actualizar el estado del Modo Físico y de Inactividad antes de notificar
         updatePhysicalStudyMode(inclination)
+        updateInactivityState(accel)
         onStateUpdated(currentState)
     }
 
@@ -72,6 +82,26 @@ class ContextManager(private val onStateUpdated: (ContextState) -> Unit) {
         } else {
             faceDownStartTime = 0L
             _isPhysicalStudyModeActive = false
+        }
+    }
+
+    /**
+     * Detecta con confirmación temporal si el dispositivo está completamente inmóvil
+     * (magnitud de aceleración dinámica por debajo de [stillnessAccelThreshold]).
+     * Requiere quietud sostenida durante [inactivityConfirmationDelayMs] ms (30 s) para
+     * confirmar abandono; cualquier movimiento reinicia el conteo de inmediato.
+     */
+    private fun updateInactivityState(accel: Float) {
+        val currentTime = SystemClock.elapsedRealtime()
+        val isStill = accel < stillnessAccelThreshold
+        if (isStill) {
+            if (stillStartTime == 0L) {
+                stillStartTime = currentTime
+            }
+            _isDeviceInactive = (currentTime - stillStartTime) >= inactivityConfirmationDelayMs
+        } else {
+            stillStartTime = 0L
+            _isDeviceInactive = false
         }
     }
 
