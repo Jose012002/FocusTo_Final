@@ -26,7 +26,10 @@ class ContextManager(private val onStateUpdated: (ContextState) -> Unit) {
     // inmediato en cuanto se detecta movimiento (sin retardo de salida).
     private var stillStartTime: Long = 0
     private val inactivityConfirmationDelayMs = 30_000L
-    private val stillnessAccelThreshold = 0.15f
+    // Mismo umbral que el ya validado por el equipo para "sin movimiento" en FACE_ABSENT
+    // (ver evaluateConcentration): un valor mas ajustado no tolera el ruido normal del
+    // acelerometro y el temporizador nunca llega a acumular los 30s en un dispositivo real.
+    private val stillnessAccelThreshold = 0.5f
     private var _isDeviceInactive: Boolean = false
     val isDeviceInactive: Boolean get() = _isDeviceInactive
 
