@@ -323,9 +323,7 @@ class MainActivity : AppCompatActivity() {
                     // Al volver a detectar movimiento, salimos solos de INACTIVO y
                     // retomamos la sesión: el próximo tick de evaluateConcentration()
                     // recalculará el modo que corresponda al contexto actual.
-                    viewModel.setPausedByInactivity(false)
-                    viewModel.hideLockOverlay()
-                    resumePomodoro()
+                    resumeFromInactivityAutomatically()
                 } else {
                     hideHealthAlert()
                     viewModel.setPhysicalStudyModeNotified(false)
@@ -528,6 +526,23 @@ class MainActivity : AppCompatActivity() {
      */
     private fun resumePomodoro() {
         if (!checkPermissions()) return
+        viewModel.onPomodoroResumed()
+        setSilentMode(true)
+        sendToFocusService(FocusService.ACTION_RESUME_FOCUS)
+    }
+
+    /**
+     * Reanuda la sesión automáticamente al salir de INACTIVO por movimiento detectado.
+     * A diferencia de [resumePomodoro] (la del botón "CONTINUAR"), NO llama a
+     * checkPermissions(): esa función puede lanzar una pantalla de Configuración de
+     * Android si detecta un permiso faltante, algo apropiado para una acción manual del
+     * usuario pero no para una recuperación silenciosa en segundo plano — el usuario no
+     * debe salir sorpresivamente de la app solo por mover el teléfono. Los permisos ya
+     * se validaron al iniciar la sesión (startPomodoro), así que no hace falta repetirlos.
+     */
+    private fun resumeFromInactivityAutomatically() {
+        viewModel.setPausedByInactivity(false)
+        viewModel.hideLockOverlay()
         viewModel.onPomodoroResumed()
         setSilentMode(true)
         sendToFocusService(FocusService.ACTION_RESUME_FOCUS)
